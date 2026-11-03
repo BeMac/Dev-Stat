@@ -1,0 +1,13 @@
+.admin-card {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+a.admin-card:hover,
+a.admin-card:focus-visible {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+}
+
+.admin-card-disabled {
+    opacity: 0.6;
+}

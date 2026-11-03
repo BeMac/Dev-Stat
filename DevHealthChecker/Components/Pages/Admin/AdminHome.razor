@@ -1,0 +1,49 @@
+@page "/admin"
+@inject IWebsiteStore WebsiteStore
+
+<PageTitle>Admin</PageTitle>
+
+<h1>Admin</h1>
+<p class="text-muted">Configure what the dashboard monitors.</p>
+
+<div class="row g-3">
+    <div class="col-sm-6 col-lg-4">
+        <a href="admin/websites" class="card h-100 text-decoration-none admin-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Websites</h2>
+                <p class="card-text text-muted">Sites and endpoints to check for up/down status.</p>
+            </div>
+            <div class="card-footer bg-transparent text-body-secondary">
+                @websiteCount configured
+            </div>
+        </a>
+    </div>
+
+    @foreach (var (title, description) in ComingSoon)
+    {
+        <div class="col-sm-6 col-lg-4">
+            <div class="card h-100 admin-card admin-card-disabled" aria-disabled="true">
+                <div class="card-body">
+                    <h2 class="h5 card-title">@title</h2>
+                    <p class="card-text text-muted">@description</p>
+                </div>
+                <div class="card-footer bg-transparent text-body-secondary">Coming soon</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly (string Title, string Description)[] ComingSoon =
+    [
+        ("Pipelines", "Build and release pipelines to track."),
+        ("Error sources", "Logs and error trackers to watch."),
+    ];
+
+    private int websiteCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        websiteCount = (await WebsiteStore.GetAllAsync()).Count;
+    }
+}

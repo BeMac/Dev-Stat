@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Rider
 riderModule.iml
+
+# App data files (websites.json etc.) - environment-specific, not source
+App_Data/
