@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevHealthChecker", "DevHealthChecker\DevHealthChecker.csproj", "{9625CD1B-EE6D-4E5E-9B45-099C63176FBD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevStats", "DevStats\DevStats.csproj", "{9625CD1B-EE6D-4E5E-9B45-099C63176FBD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

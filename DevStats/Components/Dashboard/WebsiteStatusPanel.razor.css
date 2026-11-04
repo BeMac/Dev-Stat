@@ -1,0 +1,42 @@
+.website-card {
+    border-left-width: 0.3rem;
+}
+
+.website-card.state-up {
+    border-left-color: var(--bs-success);
+}
+
+.website-card.state-down {
+    border-left-color: var(--bs-danger);
+    background-color: var(--bs-danger-bg-subtle);
+}
+
+.website-card.state-pending,
+.website-card.state-disabled {
+    border-left-color: var(--bs-secondary-border-subtle);
+}
+
+.website-card.state-disabled {
+    opacity: 0.65;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    margin-right: 0.35rem;
+    vertical-align: baseline;
+}
+
+.status-up {
+    background-color: var(--bs-success);
+}
+
+.status-down {
+    background-color: var(--bs-danger);
+}
+
+.status-pending {
+    background-color: var(--bs-secondary);
+}

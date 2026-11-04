@@ -1,0 +1,113 @@
+@page "/admin/websites"
+@rendermode InteractiveServer
+@inject IWebsiteStore WebsiteStore
+
+<PageTitle>Websites · Admin</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="admin">Admin</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Websites</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Websites</h1>
+    <a class="btn btn-primary" href="admin/websites/new">Add website</a>
+</div>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (websites is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (websites.Count == 0)
+{
+    <div class="alert alert-secondary">
+        No websites yet. <a href="admin/websites/new">Add your first one</a>.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Environment</th>
+                <th>Interval</th>
+                <th>Enabled</th>
+                <th><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var site in websites)
+            {
+                <tr>
+                    <td>@site.Name</td>
+                    <td><a href="@site.Url" target="_blank" rel="noopener noreferrer">@site.Url</a></td>
+                    <td>@site.Environment</td>
+                    <td>@site.CheckIntervalSeconds s</td>
+                    <td>
+                        @if (site.Enabled)
+                        {
+                            <span class="badge text-bg-success">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">No</span>
+                        }
+                    </td>
+                    <td class="text-end text-nowrap">
+                        @if (pendingDeleteId == site.Id)
+                        {
+                            <span class="me-2">Delete?</span>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteAsync(site.Id)">Yes, delete</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => pendingDeleteId = null">Cancel</button>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-outline-secondary" href="admin/websites/@site.Id/edit">Edit</a>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => pendingDeleteId = site.Id">Delete</button>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Website>? websites;
+    private Guid? pendingDeleteId;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        websites = await WebsiteStore.GetAllAsync();
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        errorMessage = null;
+        try
+        {
+            await WebsiteStore.DeleteAsync(id);
+            websites = await WebsiteStore.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Could not delete the website: {ex.Message}";
+        }
+        finally
+        {
+            pendingDeleteId = null;
+        }
+    }
+}

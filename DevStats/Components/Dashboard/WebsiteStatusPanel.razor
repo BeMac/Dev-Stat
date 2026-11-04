@@ -1,0 +1,137 @@
+@implements IDisposable
+@inject WebsiteStatusService StatusService
+@inject WebsiteCheckResultStore ResultStore
+@inject IWebsiteStore WebsiteStore
+
+<section class="dashboard-section" aria-labelledby="websites-heading">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-baseline mb-3">
+        <h2 id="websites-heading" class="h4 mb-0">Websites</h2>
+        @if (statuses is { Count: > 0 })
+        {
+            <div class="small text-body-secondary" aria-live="polite">
+                <span class="me-3"><span class="status-dot status-up"></span>@Count(WebsiteState.Up) up</span>
+                <span class="me-3"><span class="status-dot status-down"></span>@Count(WebsiteState.Down) down</span>
+                @if (Count(WebsiteState.Pending) > 0)
+                {
+                    <span class="me-3"><span class="status-dot status-pending"></span>@Count(WebsiteState.Pending) checking</span>
+                }
+                <a href="admin/websites">Manage</a>
+            </div>
+        }
+    </div>
+
+    @if (statuses is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (statuses.Count == 0)
+    {
+        <div class="alert alert-secondary">
+            No websites are being monitored yet. <a href="admin/websites/new">Add one in Admin</a>.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var site in statuses)
+            {
+                <div class="col-sm-6 col-xl-4">
+                    <div class="card h-100 website-card state-@site.State.ToString().ToLowerInvariant()">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                <h3 class="h6 card-title mb-0 text-truncate" title="@site.Name">@site.Name</h3>
+                                <span class="badge @BadgeClass(site.State)">@StateLabel(site.State)</span>
+                            </div>
+
+                            <a class="small d-block text-truncate mb-2" href="@site.Url" target="_blank" rel="noopener noreferrer" title="@site.Url">@site.Url</a>
+
+                            <div class="small text-body-secondary d-flex flex-wrap gap-3">
+                                @if (!string.IsNullOrWhiteSpace(site.Environment))
+                                {
+                                    <span class="badge text-bg-light border">@site.Environment</span>
+                                }
+                                @if (site.StatusCode is { } httpStatus)
+                                {
+                                    <span>HTTP @httpStatus</span>
+                                }
+                                @if (site.ResponseTimeMs is { } ms)
+                                {
+                                    <span>@ms ms</span>
+                                }
+                                @if (site.CheckedAt is { } checkedAt)
+                                {
+                                    <span title="@checkedAt.ToLocalTime().ToString("G")">checked @Ago(checkedAt)</span>
+                                }
+                            </div>
+
+                            @if (site.State == WebsiteState.Down && site.Error is not null)
+                            {
+                                <div class="small text-danger mt-2">@site.Error</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<WebsiteStatus>? statuses;
+    private Timer? ticker;
+
+    protected override async Task OnInitializedAsync()
+    {
+        statuses = await StatusService.GetAllAsync();
+        ResultStore.Changed += OnDataChanged;
+        WebsiteStore.Changed += OnDataChanged;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Only tick once the interactive circuit is running, to keep the "checked Xs ago" text fresh.
+        if (firstRender && RendererInfo.IsInteractive)
+        {
+            ticker = new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        }
+    }
+
+    private void OnDataChanged() => InvokeAsync(async () =>
+    {
+        statuses = await StatusService.GetAllAsync();
+        StateHasChanged();
+    });
+
+    private int Count(WebsiteState state) => statuses?.Count(s => s.State == state) ?? 0;
+
+    private static string StateLabel(WebsiteState state) => state switch
+    {
+        WebsiteState.Up => "Up",
+        WebsiteState.Down => "Down",
+        WebsiteState.Pending => "Checking…",
+        _ => "Disabled",
+    };
+
+    private static string BadgeClass(WebsiteState state) => state switch
+    {
+        WebsiteState.Up => "text-bg-success",
+        WebsiteState.Down => "text-bg-danger",
+        _ => "text-bg-secondary",
+    };
+
+    private static string Ago(DateTimeOffset time)
+    {
+        var elapsed = DateTimeOffset.UtcNow - time;
+        if (elapsed < TimeSpan.FromSeconds(5)) return "just now";
+        if (elapsed < TimeSpan.FromMinutes(1)) return $"{(int)elapsed.TotalSeconds}s ago";
+        if (elapsed < TimeSpan.FromHours(1)) return $"{(int)elapsed.TotalMinutes}m ago";
+        return $"{(int)elapsed.TotalHours}h ago";
+    }
+
+    public void Dispose()
+    {
+        ResultStore.Changed -= OnDataChanged;
+        WebsiteStore.Changed -= OnDataChanged;
+        ticker?.Dispose();
+    }
+}

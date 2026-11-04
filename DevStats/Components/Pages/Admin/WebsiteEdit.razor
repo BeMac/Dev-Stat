@@ -1,0 +1,152 @@
+@page "/admin/websites/new"
+@page "/admin/websites/{Id:guid}/edit"
+@rendermode InteractiveServer
+@inject IWebsiteStore WebsiteStore
+@inject NavigationManager Navigation
+
+<PageTitle>@Title · Admin</PageTitle>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="admin">Admin</a></li>
+        <li class="breadcrumb-item"><a href="admin/websites">Websites</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(IsNew ? "Add" : "Edit")</li>
+    </ol>
+</nav>
+
+<h1>@Title</h1>
+
+@if (_notFound)
+{
+    <div class="alert alert-warning">
+        That website no longer exists. <a href="admin/websites">Back to websites</a>.
+    </div>
+}
+else if (_model is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger">@_errorMessage</div>
+    }
+
+    <div class="website-form">
+    <EditForm Model="_model" OnValidSubmit="SaveAsync" FormName="website">
+        <DataAnnotationsValidator/>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="_model.Name" placeholder="Marketing site"/>
+            <ValidationMessage For="() => _model.Name"/>
+        </div>
+
+        <div class="mb-3">
+            <label for="url" class="form-label">URL</label>
+            <InputText id="url" type="url" class="form-control" @bind-Value="_model.Url" placeholder="https://example.com/health"/>
+            <div class="form-text">The address to request. A dedicated health endpoint works best if the site has one.</div>
+            <ValidationMessage For="() => _model.Url"/>
+        </div>
+
+        <div class="mb-3">
+            <label for="environment" class="form-label">Environment <span class="text-muted">(optional)</span></label>
+            <InputText id="environment" class="form-control" @bind-Value="_model.Environment" list="environments" placeholder="Dev, QA, Prod…"/>
+            <datalist id="environments">
+                <option value="Dev"></option>
+                <option value="QA"></option>
+                <option value="Staging"></option>
+                <option value="Prod"></option>
+            </datalist>
+            <ValidationMessage For="() => _model.Environment"/>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-sm-4">
+                <label for="interval" class="form-label">Check every (seconds)</label>
+                <InputNumber id="interval" class="form-control" @bind-Value="_model.CheckIntervalSeconds"/>
+                <ValidationMessage For="() => _model.CheckIntervalSeconds"/>
+            </div>
+            <div class="col-sm-4">
+                <label for="timeout" class="form-label">Timeout (seconds)</label>
+                <InputNumber id="timeout" class="form-control" @bind-Value="_model.TimeoutSeconds"/>
+                <ValidationMessage For="() => _model.TimeoutSeconds"/>
+            </div>
+            <div class="col-sm-4">
+                <label for="status" class="form-label">Expected status <span class="text-muted">(optional)</span></label>
+                <InputNumber id="status" class="form-control" @bind-Value="_model.ExpectedStatusCode" placeholder="Any 2xx"/>
+                <ValidationMessage For="() => _model.ExpectedStatusCode"/>
+            </div>
+        </div>
+
+        <div class="form-check mb-4">
+            <InputCheckbox id="enabled" class="form-check-input" @bind-Value="_model.Enabled"/>
+            <label for="enabled" class="form-check-label">Enabled</label>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Saving…" : "Save")</button>
+            <a href="admin/websites" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+    private string Title => IsNew ? "Add website" : "Edit website";
+
+    private Website? _model;
+    private bool _notFound;
+    private bool _saving;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _notFound = false;
+        _errorMessage = null;
+
+        if (Id is { } id)
+        {
+            _model = await WebsiteStore.GetAsync(id);
+            _notFound = _model is null;
+        }
+        else
+        {
+            _model = new Website();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_model is null) return;
+
+        _saving = true;
+        _errorMessage = null;
+        try
+        {
+            if (IsNew)
+            {
+                await WebsiteStore.AddAsync(_model);
+            }
+            else if (!await WebsiteStore.UpdateAsync(_model))
+            {
+                _notFound = true;
+                return;
+            }
+
+            Navigation.NavigateTo("admin/websites");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not save the website: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

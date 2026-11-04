@@ -1,7 +1,7 @@
-using DevHealthChecker.Components;
-using DevHealthChecker.Storage;
-using DevHealthChecker.Websites;
-using DevHealthChecker.Websites.Monitoring;
+using DevStats.Components;
+using DevStats.Storage;
+using DevStats.Websites;
+using DevStats.Websites.Monitoring;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +16,7 @@ builder.Services.AddSingleton<IWebsiteStore, JsonWebsiteStore>();
 builder.Services.AddHttpClient(WebsiteChecker.HttpClientName, client =>
 {
     client.Timeout = Timeout.InfiniteTimeSpan; // each check applies its own per-site timeout
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("DevHealthChecker/1.0");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("DevStats/1.0");
 });
 builder.Services.AddSingleton<WebsiteChecker>();
 builder.Services.AddSingleton<WebsiteCheckResultStore>();
