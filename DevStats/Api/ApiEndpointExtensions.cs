@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 namespace DevStats.Api;
 
 public static class ApiEndpointExtensions
-{I 
+{ 
     public static TBuilder WithoutStatusCodePages<TBuilder>(this TBuilder builder) where TBuilder : IEndpointConventionBuilder =>
         builder.AddEndpointFilter(async (context, next) =>
         {
